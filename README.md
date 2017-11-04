@@ -1,4 +1,4 @@
-# K-means-and-Bisecting-K-means-Method
+# K-means and Bisecting-K-means Method
 Implementation of K-means and bisecting K-means method in Python
 The implementation of K-means method based on the example from the book "Machine learning in Action".
 I modified the codes for bisecting K-means method since the algorithm of this part shown in this book is not really correct.
