@@ -106,53 +106,56 @@ def plot2DKmeans(dataSet,label,centroids,K):
     ax.legend([c1,c2,c3],['cluster 0','cluster 1','cluster 2','cluster 3'])
     plt.show()       
 
-#Implementation of bisecting K-means method
-def biKmeans(dataSet,K,numIterations):
-    m=shape(dataSet)[0]
-    centroid0=mean(dataSet,axis=0).tolist()[0]
-    centList=[centroid0]
-    clusterAssment=mat(zeros((m,2)))
+#bisecting K-means method
+def bisectingKMeans(dataSet,K,numIterations):
+    m,n=shape(dataSet)
+    clusterInformation=mat(zeros((m,2)))
+    centroidList=[]
+    minSSE=inf
     
-    #store the SSE for the intial cluster0 which is the whole dataset
-    for i in range(m):
-        clusterAssment[i,1]=distEclud(mat(dataSet[i,:]), mat(centroid0))**2
-    while len(centList)<K:
-        #Choose the cluster with the largest SSE from cluster list to split two smaller
-        #clusters
-        SSE1=-1.0; maxIndex=-2
-        for j in range(len(centList)):
-            SSE=sum(clusterAssment[nonzero(clusterAssment[:,0]==j)[0],1])**2
-            if SSE>SSE1:
+    #At the first place, regard the whole dataset as a cluster and find the best clusters
+    for i in range(numIterations):
+        centroid,clusterAssment=kMeans(dataSet, 2)
+        SSE=sum(clusterAssment,axis=0)[0,1]
+        if SSE<minSSE:
+            minSSE=SSE
+            tempCentroid=centroid
+            tempCluster=clusterAssment
+    centroidList.append(tempCentroid[0].tolist()[0])
+    centroidList.append(tempCentroid[1].tolist()[0])
+    clusterInformation=tempCluster
+    minSSE=inf 
+    
+    while len(centroidList)<K:
+        maxIndex=-2
+        maxSSE=-1
+        #Choose the cluster with Maximum SSE to split
+        for j in range(len(centroidList)):
+            SSE=sum(clusterInformation[nonzero(clusterInformation[:,0]==j)[0]])
+            if SSE>maxSSE:
                 maxIndex=j
-                SSE1=SSE       
-        SSE2=inf;
-        #For numIterations times, take the split that produces the clustering 
-        #with smallest total SSE (highest overall similarity)
-        for m in range(numIterations):
-            ptsInCurrCluster=dataSet[nonzero(clusterAssment[:,0]==maxIndex)[0],:]
-            centroidMat,splittedClusterAssment=kMeans(ptsInCurrCluster, 2)
-            totalSSE=sum(splittedClusterAssment[:,1],axis=0)**2
-            if totalSSE<SSE2:
-                tempCentr=centroidMat.copy()
-                tempClusterAssment=splittedClusterAssment.copy()
-                SSE2=totalSSE
-        tempClusterAssment[nonzero(tempClusterAssment[:,0]==1)[0],0]=len(centList)
-        tempClusterAssment[nonzero(tempClusterAssment[:,0]==0)[0],0]=maxIndex
-    
-        #update the error in clusterAssment
-        numOfDataInCluster=len(tempClusterAssment[:,0])
-        clusterAssment[nonzero(clusterAssment[:,0]==maxIndex)[0],1]\
-        =tempClusterAssment[:,1].reshape(numOfDataInCluster).tolist()[0] #Handle boardcasting
-    
-        #update the label index of data
-        length=len(tempClusterAssment)
-        clusterAssment[nonzero(clusterAssment[:,0]==maxIndex)[0],0]=tempClusterAssment[:,0].reshape(length).tolist()[0]
+                maxSSE=SSE
+                
+        minIndex=-2
+        #Choose the clusters with minimum total SSE to store into the centroidList
+        for k in range(numIterations):
+            pointsInCluster=dataSet[nonzero(clusterInformation[:,0]==maxIndex)[0]]
+            centroid,clusterAssment=kMeans(pointsInCluster, 2)
+            SSE=sum(clusterAssment[:,1],axis=0)
+            if SSE<minSSE:
+                minSSE=SSE
+                tempCentroid=centroid.copy()
+                tempCluster=clusterAssment.copy()
+        #Update the index
+        tempCluster[nonzero(tempCluster[:,0]==1)[0],0]=len(centroidList)
+        tempCluster[nonzero(tempCluster[:,0]==0)[0],0]=maxIndex
         
-        #Add two choosen centroids to centList
-        centList[maxIndex]=centroidMat[0,:]
-        centList.append(centroidMat[1,:])
-    
-    return centList,clusterAssment
+        #update the information of index and SSE
+        clusterInformation[nonzero(clusterInformation[:,0]==maxIndex)[0],:]=tempCluster
+        #update the centrolist
+        centroidList[maxIndex]=tempCentroid[0].tolist()[0]
+        centroidList.append(tempCentroid[1].tolist()[0])
+    return centroidList,clusterInformation
         
 
 
